@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_10r8mom" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.2.0">
+  <bpmn:process id="process-create-project-task" name="process-create-project-task" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_0wxa96m</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_0wxa96m" sourceRef="StartEvent_1" targetRef="Activity_1ph12fx" />
+    <bpmn:sequenceFlow id="Flow_0xwl3js" sourceRef="Activity_1ph12fx" targetRef="Activity_0ybj0bi" />
+    <bpmn:serviceTask id="Activity_0ybj0bi" name="Create Project" camunda:expression="${bpmnComponent.createProject(execution.id,execution.processInstanceId)}">
+      <bpmn:incoming>Flow_0xwl3js</bpmn:incoming>
+      <bpmn:outgoing>Flow_1ry5pfh</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gateway_0axcamw">
+      <bpmn:incoming>Flow_1ry5pfh</bpmn:incoming>
+      <bpmn:outgoing>Flow_0gnoqbj</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0m4esap</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_1ry5pfh" sourceRef="Activity_0ybj0bi" targetRef="Gateway_0axcamw" />
+    <bpmn:sequenceFlow id="Flow_0gnoqbj" name="Project Create Failed" sourceRef="Gateway_0axcamw" targetRef="Event_1ly50cz">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${process_continue == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:endEvent id="Event_1ly50cz">
+      <bpmn:incoming>Flow_0gnoqbj</bpmn:incoming>
+      <bpmn:terminateEventDefinition id="TerminateEventDefinition_1jm1zou" />
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0m4esap" name="Project Create Success" sourceRef="Gateway_0axcamw" targetRef="capture-task-details">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${process_continue == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:userTask id="capture-task-details" name="Capture Task Details">
+      <bpmn:documentation>This process is waiting for a user to create a task for this project named ${project.name}</bpmn:documentation>
+      <bpmn:incoming>Flow_0m4esap</bpmn:incoming>
+      <bpmn:incoming>Flow_0gxns6h</bpmn:incoming>
+      <bpmn:incoming>Flow_04gj67b</bpmn:incoming>
+      <bpmn:outgoing>Flow_03thif0</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_1lhbqf7">
+      <bpmn:incoming>Flow_074kss1</bpmn:incoming>
+      <bpmn:outgoing>Flow_0gxns6h</bpmn:outgoing>
+      <bpmn:outgoing>Flow_09xoiwi</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_03thif0" sourceRef="capture-task-details" targetRef="Activity_1bt6a3l" />
+    <bpmn:serviceTask id="Activity_1bt6a3l" name="Create Task" camunda:expression="${bpmnComponent.processInit(execution.id,execution.processInstanceId)}">
+      <bpmn:incoming>Flow_03thif0</bpmn:incoming>
+      <bpmn:outgoing>Flow_074kss1</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_074kss1" sourceRef="Activity_1bt6a3l" targetRef="Gateway_1lhbqf7" />
+    <bpmn:sequenceFlow id="Flow_0gxns6h" name="Task Create Failed" sourceRef="Gateway_1lhbqf7" targetRef="capture-task-details">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${process_continue == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:endEvent id="Event_1de1jp0">
+      <bpmn:incoming>Flow_04nep07</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_09xoiwi" name="Task create success" sourceRef="Gateway_1lhbqf7" targetRef="want-to-create-more-tasks">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${process_continue == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_1dopczt" sourceRef="want-to-create-more-tasks" targetRef="Gateway_1m26o0m" />
+    <bpmn:userTask id="want-to-create-more-tasks" name="Want To Create More Tasks">
+      <bpmn:documentation>This process is waiting for a user to decide to add another task to project named ${project.name}</bpmn:documentation>
+      <bpmn:incoming>Flow_09xoiwi</bpmn:incoming>
+      <bpmn:outgoing>Flow_1dopczt</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_04gj67b" name="I want to add more tasks" sourceRef="Gateway_1m26o0m" targetRef="capture-task-details">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${create_other_task == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:exclusiveGateway id="Gateway_1m26o0m">
+      <bpmn:incoming>Flow_1dopczt</bpmn:incoming>
+      <bpmn:outgoing>Flow_04nep07</bpmn:outgoing>
+      <bpmn:outgoing>Flow_04gj67b</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_04nep07" name="Im done creating Tasks" sourceRef="Gateway_1m26o0m" targetRef="Event_1de1jp0">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${create_other_task == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:serviceTask id="Activity_1ph12fx" name="Init Process" camunda:expression="${bpmnComponent.processInit(execution.id,execution.processInstanceId)}">
+      <bpmn:incoming>Flow_0wxa96m</bpmn:incoming>
+      <bpmn:outgoing>Flow_0xwl3js</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:textAnnotation id="TextAnnotation_147xe66">
+      <bpmn:text>Call Project Microservice To Create Project</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_177pygg" sourceRef="Activity_0ybj0bi" targetRef="TextAnnotation_147xe66" />
+    <bpmn:textAnnotation id="TextAnnotation_0a2xrek">
+      <bpmn:text>We need a human action</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_0whoomo" sourceRef="capture-task-details" targetRef="TextAnnotation_0a2xrek" />
+    <bpmn:textAnnotation id="TextAnnotation_02kibdp">
+      <bpmn:text>Call Task Microservice To Create Task</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_03v0f0i" sourceRef="Activity_1bt6a3l" targetRef="TextAnnotation_02kibdp" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="process-create-project-task">
+      <bpmndi:BPMNEdge id="Flow_04nep07_di" bpmnElement="Flow_04nep07" bioc:stroke="rgb(67, 160, 71)" bioc:fill="rgb(200, 230, 201)">
+        <di:waypoint x="1695" y="420" />
+        <di:waypoint x="1992" y="420" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1804" y="386" width="82" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_04gj67b_di" bpmnElement="Flow_04gj67b" bioc:stroke="rgb(142, 36, 170)" bioc:fill="rgb(225, 190, 231)">
+        <di:waypoint x="1670" y="445" />
+        <di:waypoint x="1670" y="670" />
+        <di:waypoint x="540" y="670" />
+        <di:waypoint x="540" y="420" />
+        <di:waypoint x="610" y="420" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1678" y="466" width="63" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1dopczt_di" bpmnElement="Flow_1dopczt">
+        <di:waypoint x="1520" y="420" />
+        <di:waypoint x="1645" y="420" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_09xoiwi_di" bpmnElement="Flow_09xoiwi" bioc:stroke="rgb(67, 160, 71)" bioc:fill="rgb(200, 230, 201)">
+        <di:waypoint x="1165" y="420" />
+        <di:waypoint x="1420" y="420" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1265" y="386" width="57" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0gxns6h_di" bpmnElement="Flow_0gxns6h" bioc:stroke="rgb(229, 57, 53)" bioc:fill="rgb(255, 205, 210)">
+        <di:waypoint x="1140" y="445" />
+        <di:waypoint x="1140" y="580" />
+        <di:waypoint x="660" y="580" />
+        <di:waypoint x="660" y="460" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="872" y="546" width="59" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_074kss1_di" bpmnElement="Flow_074kss1">
+        <di:waypoint x="980" y="420" />
+        <di:waypoint x="1115" y="420" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_03thif0_di" bpmnElement="Flow_03thif0">
+        <di:waypoint x="710" y="420" />
+        <di:waypoint x="880" y="420" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0m4esap_di" bpmnElement="Flow_0m4esap" bioc:stroke="rgb(67, 160, 71)" bioc:fill="rgb(200, 230, 201)">
+        <di:waypoint x="660" y="295" />
+        <di:waypoint x="660" y="380" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="584" y="316" width="71" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0gnoqbj_di" bpmnElement="Flow_0gnoqbj" bioc:stroke="rgb(229, 57, 53)" bioc:fill="rgb(255, 205, 210)">
+        <di:waypoint x="685" y="270" />
+        <di:waypoint x="902" y="270" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="759" y="236" width="71" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1ry5pfh_di" bpmnElement="Flow_1ry5pfh">
+        <di:waypoint x="560" y="270" />
+        <di:waypoint x="635" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0xwl3js_di" bpmnElement="Flow_0xwl3js">
+        <di:waypoint x="410" y="117" />
+        <di:waypoint x="435" y="117" />
+        <di:waypoint x="435" y="270" />
+        <di:waypoint x="460" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0wxa96m_di" bpmnElement="Flow_0wxa96m">
+        <di:waypoint x="215" y="117" />
+        <di:waypoint x="310" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="179" y="99" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1qhpvx9_di" bpmnElement="Activity_0ybj0bi">
+        <dc:Bounds x="460" y="230" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0axcamw_di" bpmnElement="Gateway_0axcamw" isMarkerVisible="true">
+        <dc:Bounds x="635" y="245" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1dq3sfi_di" bpmnElement="Event_1ly50cz" bioc:stroke="rgb(229, 57, 53)" bioc:fill="rgb(255, 205, 210)">
+        <dc:Bounds x="902" y="252" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_061bznk_di" bpmnElement="capture-task-details">
+        <dc:Bounds x="610" y="380" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1lhbqf7_di" bpmnElement="Gateway_1lhbqf7" isMarkerVisible="true">
+        <dc:Bounds x="1115" y="395" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1ftbzto_di" bpmnElement="Activity_1bt6a3l">
+        <dc:Bounds x="880" y="380" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1de1jp0_di" bpmnElement="Event_1de1jp0" bioc:stroke="rgb(67, 160, 71)" bioc:fill="rgb(200, 230, 201)">
+        <dc:Bounds x="1992" y="402" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0lo5bkp_di" bpmnElement="want-to-create-more-tasks">
+        <dc:Bounds x="1420" y="380" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1m26o0m_di" bpmnElement="Gateway_1m26o0m" isMarkerVisible="true">
+        <dc:Bounds x="1645" y="395" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_17pknqn_di" bpmnElement="Activity_1ph12fx">
+        <dc:Bounds x="310" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_147xe66_di" bpmnElement="TextAnnotation_147xe66">
+        <dc:Bounds x="560" y="150" width="99.98924268502583" height="54.364780550774526" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_0a2xrek_di" bpmnElement="TextAnnotation_0a2xrek">
+        <dc:Bounds x="780" y="300" width="99.99999999999999" height="40.18912529550827" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_02kibdp_di" bpmnElement="TextAnnotation_02kibdp">
+        <dc:Bounds x="980" y="300" width="99.98924268502583" height="53.35628227194492" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_177pygg_di" bpmnElement="Association_177pygg">
+        <di:waypoint x="548" y="230" />
+        <di:waypoint x="573" y="204" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_0whoomo_di" bpmnElement="Association_0whoomo">
+        <di:waypoint x="710" y="389" />
+        <di:waypoint x="789" y="340" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_03v0f0i_di" bpmnElement="Association_03v0f0i">
+        <di:waypoint x="968" y="380" />
+        <di:waypoint x="993" y="353" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
