@@ -17,6 +17,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.jayway.restassured.http.ContentType;
 import com.jayway.restassured.internal.RestAssuredResponseImpl;
 import com.jayway.restassured.response.Response;
@@ -24,7 +25,13 @@ import com.jayway.restassured.response.ResponseBody;
 
 import za.co.nextgen.NextgenServiceApplication;
 import za.co.nextgen.model.Project;
+import za.co.nextgen.model.ProjectRef;
+import za.co.nextgen.model.Task;
+import za.co.nextgen.model.request.CompleteCreateMoreTasksTaskRequest;
+import za.co.nextgen.model.request.CompleteTaskTaskRequest;
+import za.co.nextgen.model.response.CreateMoreTasksResponse;
 import za.co.nextgen.model.response.CreateProjectResponse;
+import za.co.nextgen.model.response.CreateTaskResponse;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -49,19 +56,26 @@ public class APITest {
 
 	
     private static ClientAndServer mockServer;
+    
+    private static String processInstanceId;
+    private static String taskInstanceId;
+    private static Long projectId;
+    private static String projectHref;
+    
+    private static String secondTaskInstanceId;
 
     @BeforeAll
     public static void startMockServer() {
         mockServer = startClientAndServer(5100);
-
-        Expectation[] expectations = new MockServerClient("localhost", 5100)
+        Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd'T'HH:mm:ss").create();
+        MockServerClient mockServerClient = new MockServerClient("localhost", 5100);
+        
+        // Fake Project MicroService Request And Response
+        mockServerClient
                 .when(
                         request()
                                 .withMethod("POST")
                                 .withPath("/project/api/project")
-//                                .withCookies(
-//                                        cookie("session", "4930456C-C718-476F-971F-CB8E047AB349")
-//                                )
                                 .withBody(
                                         new Gson().toJson(APITest.createProject())
                                 )
@@ -74,10 +88,33 @@ public class APITest {
                                 new Header("Cache-Control", "public, max-age=86400")
                         )
                                 .withBody(
-                                		new Gson().toJson(createProjectResponse())
+                                		gson.toJson(createProjectResponse())
                                 			)
                 );
-        System.out.println(expectations);
+        
+        
+        
+        
+     // Fake Task MicroService Response
+        
+        mockServerClient
+        .when(
+                request()
+                        .withMethod("POST")
+                        .withPath("/task/api/task")
+        )
+        .respond(
+        		
+                response().withStatusCode(200)
+                .withHeaders(
+                        new Header("Content-Type", "application/json; charset=utf-8"),
+                        new Header("Cache-Control", "public, max-age=86400")
+                )
+                        .withBody(
+                        		gson.toJson(createTaskResponse())
+                        			)
+        );
+//        System.out.println(expectations);
 
         RequestDefinition[] requestDefinitions = new MockServerClient("localhost", 5100)
                 .retrieveRecordedRequests(
@@ -86,6 +123,10 @@ public class APITest {
                                 .withBody(
                                         new Gson().toJson(APITest.createProject())
                                 ).withMethod("POST")
+//                        .request().withPath("/task/api/task")
+//                        .withBody(
+//                                new Gson().toJson(APITest.createCompleteTaskTaskRequest())
+//                        ).withMethod("POST")
                 );
         System.out.println(requestDefinitions);
     }
@@ -94,37 +135,12 @@ public class APITest {
     public static void stopMockServer() {
        mockServer.stop();
     }
-//	//fail fetch all projects
-//	
-//	@Test
-//	@Order(1)
-//	public void test_fetch_all_fail() {
-//		
-//		Response response = APITest.doGetRequest("/bpmn/project");
-//		System.out.println(response.getStatusCode());
-//		Assert.assertEquals(response.getStatusCode(), 404);
-//		
-//	}
-//	
-//	/**
-//	 * fail fetch get project by Id
-//	 * its suppose to try get project and all its tasks
-//	 */
-//	
-//	@Test
-//	@Order(2)
-//	public void test_fetch_by_id_fail() {
-//		
-//		Response response = APITest.doGetRequest("/bpmn/project/1");
-//		
-//		Assert.assertEquals(response.getStatusCode(), 404);
-//		
-//	}
+
 	
 	//create a project - screen number 1
 	@Test
-	@Order(3)
-	public void test_create_resource_success() {
+	@Order(1)
+	public void test_create_project_resource_success() {
 		String projectJSON = new Gson().toJson(createProject());
 		
 		ResponseBody responseBody = APITest.doPostRequestWithBodyResponse("/bpmn/project", projectJSON);
@@ -138,38 +154,99 @@ public class APITest {
 		Assert.assertEquals(true, Objects.nonNull(response.getSavedProject()));
 		
 		System.out.println(new Gson().toJson(response));
-		
+		APITest.processInstanceId = response.getProcessInstanceId();
+		APITest.taskInstanceId = response.getTaskId();
+		APITest.projectId = response.getSavedProject().getId();
+		APITest.projectHref = response.getSavedProject().getHref();
 	}
 	//create a task to the above project - screen 2
+	@Test
+	@Order(2)
+	public void test_complete_create_task_success() {
+		String taskJSON = new Gson().toJson(createCompleteTaskTaskRequest());
+		
+		System.out.println(taskJSON);
+		ResponseBody responseBody = APITest.doPostRequestWithBodyResponse("/bpmn/task/complete-create-task", taskJSON);
+		
+		Assert.assertEquals(200, ((RestAssuredResponseImpl) responseBody).getStatusCode());
+		Assert.assertEquals(true, Objects.nonNull(responseBody.as(CreateTaskResponse.class)));
+		CreateTaskResponse response = responseBody.as(CreateTaskResponse.class);
+		
+		Assert.assertEquals(true, Objects.nonNull(response.getTaskId()));
+		Assert.assertEquals(true, Objects.nonNull(response.getProcessInstanceId()));
+		Assert.assertEquals(true, Objects.nonNull(response.getSavedTask()));
+		
+		System.out.println(new Gson().toJson(response));
+		
+		
+		
+	}
 	
+	@Test
+	@Order(3)
+	public void test_complete_create_more_tasks_yes_success() {
+		String moreTasksJSON = new Gson().toJson(createCompleteCreateMoreTasksTaskYesRequest());
+		
+		System.out.println(moreTasksJSON);
+		ResponseBody responseBody = APITest.doPostRequestWithBodyResponse("/bpmn/task/complete-create-more-tasks-task", moreTasksJSON);
+		
+		Assert.assertEquals(200, ((RestAssuredResponseImpl) responseBody).getStatusCode());
+		Assert.assertEquals(true, Objects.nonNull(responseBody.as(CreateMoreTasksResponse.class)));
+		CreateMoreTasksResponse response = responseBody.as(CreateMoreTasksResponse.class);
+		
+		Assert.assertEquals(true, Objects.nonNull(response.getTaskId()));
+		Assert.assertEquals(true, Objects.nonNull(response.getProcessInstanceId()));
+		APITest.secondTaskInstanceId = response.getTaskId();
+		System.out.println(new Gson().toJson(response));
+		
+	}
 	//create a second task to the above project
+	@Test
+	@Order(4)
+	public void test_complete_create_second_task_success() {
+		String taskJSON = new Gson().toJson(createCompleteSecondTaskTaskRequest());
+		
+		System.out.println(taskJSON);
+		ResponseBody responseBody = APITest.doPostRequestWithBodyResponse("/bpmn/task/complete-create-task", taskJSON);
+		
+		Assert.assertEquals(200, ((RestAssuredResponseImpl) responseBody).getStatusCode());
+		Assert.assertEquals(true, Objects.nonNull(responseBody.as(CreateTaskResponse.class)));
+		CreateTaskResponse response = responseBody.as(CreateTaskResponse.class);
+		
+		Assert.assertEquals(true, Objects.nonNull(response.getTaskId()));
+		Assert.assertEquals(true, Objects.nonNull(response.getProcessInstanceId()));
+		Assert.assertEquals(true, Objects.nonNull(response.getSavedTask()));
+		
+		System.out.println(new Gson().toJson(response));
+		
+		
+		
+	}
+	
+	@Test
+	@Order(5)
+	public void test_complete_create_more_tasks_no_success() {
+		String moreTasksJSON = new Gson().toJson(createCompleteCreateMoreTasksTaskNoRequest());
+		
+		System.out.println(moreTasksJSON);
+		ResponseBody responseBody = APITest.doPostRequestWithBodyResponse("/bpmn/task/complete-create-more-tasks-task", moreTasksJSON);
+		
+		Assert.assertEquals(200, ((RestAssuredResponseImpl) responseBody).getStatusCode());
+		Assert.assertEquals(true, Objects.nonNull(responseBody.as(CreateMoreTasksResponse.class)));
+		CreateMoreTasksResponse response = responseBody.as(CreateMoreTasksResponse.class);
+		
+		Assert.assertEquals(true, Objects.nonNull(response.getProcessInstanceId()));
+		System.out.println(new Gson().toJson(response));
+		
+	}
 	
 	
-//	//Fetch all projects
-//	@Test
-//	@Order(4)
-//	public void test_fetch_all_success() {
-//		Response response = APITest.doGetRequest("/bpmn/project");
-//		
-//		Assert.assertEquals(response.getStatusCode(), 200);
-//		
-//		
-//	}
-//	
-//	
-//	/**
-//	 * success fetch get project by Id
-//	 * it will project and all its tasks
-//	 */
-//	@Test
-//	@Order(4)
-//	public void test_fetch_by_id_success() {
-//		Response response = APITest.doGetRequest("/bpmn/project/1");
-//		
-//		Assert.assertEquals(response.getStatusCode(), 200);
-//		
-//		
-//	}
+	//Get all projects via Camunda
+	
+	
+	//Get Project By Id Via Camunda and also return its tasks
+	
+
 	
 	public static Project createProject() {
 		Project project = new Project();
@@ -184,8 +261,67 @@ public class APITest {
 		project.setName("Project From Test");
 		project.setDescription("Project From Test, Spring-Boot Demo");
 		project.setHref("http://nextgen-crm-project/api/project/1");
-//		project.setCreateDate(new Date());
+		project.setCreateDate(new Date());
 		return project;
+	}
+	
+	public static Task createTaskResponse() {
+		Task task =new Task();
+		task.setName("Task One From Test");
+		task.setDescription("Description From Task One From Test");
+		ProjectRef projectRef = new ProjectRef();
+		projectRef.setId(APITest.projectId);
+		projectRef.setHref(APITest.projectHref);
+		task.setProjectRef(projectRef);
+		task.setHref("http://nextgen-crm-task/api/task/1");
+		task.setCreateDate(new Date());
+		return task;
+	}
+	
+	public static CompleteTaskTaskRequest createCompleteTaskTaskRequest(){
+		CompleteTaskTaskRequest request = new CompleteTaskTaskRequest();
+		request.setProcessInstanceId(APITest.processInstanceId);
+		request.setTaskId(APITest.taskInstanceId);
+		Task task =new Task();
+		task.setName("Task One From Test");
+		task.setDescription("Description From Task One From Test");
+		ProjectRef projectRef = new ProjectRef();
+		projectRef.setId(APITest.projectId);
+		projectRef.setHref(APITest.projectHref);
+		task.setProjectRef(projectRef);
+		request.setTask(task);
+		return request;
+	}
+	
+	public static CompleteTaskTaskRequest createCompleteSecondTaskTaskRequest(){
+		CompleteTaskTaskRequest request = new CompleteTaskTaskRequest();
+		request.setProcessInstanceId(APITest.processInstanceId);
+		request.setTaskId(APITest.secondTaskInstanceId);
+		Task task =new Task();
+		task.setName("Task Two From Test");
+		task.setDescription("Description From Task Two From Test");
+		ProjectRef projectRef = new ProjectRef();
+		projectRef.setId(APITest.projectId);
+		projectRef.setHref(APITest.projectHref);
+		task.setProjectRef(projectRef);
+		request.setTask(task);
+		return request;
+	}
+	
+	public static CompleteCreateMoreTasksTaskRequest createCompleteCreateMoreTasksTaskYesRequest(){
+		CompleteCreateMoreTasksTaskRequest request = new CompleteCreateMoreTasksTaskRequest();
+		request.setProcessInstanceId(APITest.processInstanceId);
+		request.setTaskId(APITest.taskInstanceId);
+		request.setCreateMoreTasks(true);
+		return request;
+	}
+	
+	public static CompleteCreateMoreTasksTaskRequest createCompleteCreateMoreTasksTaskNoRequest(){
+		CompleteCreateMoreTasksTaskRequest request = new CompleteCreateMoreTasksTaskRequest();
+		request.setProcessInstanceId(APITest.processInstanceId);
+		request.setTaskId(APITest.taskInstanceId);
+		request.setCreateMoreTasks(false);
+		return request;
 	}
 	
 	public static Response doGetRequest(String endpoint){

@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0" id="Definitions_1rf1iid" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.2.0">
+  <bpmn:process id="process-get-all-projects" name="process-get-all-projects" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_0wuonp2</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_0wuonp2" sourceRef="StartEvent_1" targetRef="Activity_0iww4mx" />
+    <bpmn:sequenceFlow id="Flow_0jvz9nx" sourceRef="Activity_0iww4mx" targetRef="Activity_0rv6doq" />
+    <bpmn:endEvent id="Event_0h1baoe">
+      <bpmn:incoming>Flow_1unmrnq</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:exclusiveGateway id="Gateway_1xqu0z3">
+      <bpmn:incoming>Flow_1tdgwo2</bpmn:incoming>
+      <bpmn:outgoing>Flow_1unmrnq</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1yxgzhh</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_1tdgwo2" sourceRef="Activity_0rv6doq" targetRef="Gateway_1xqu0z3" />
+    <bpmn:sequenceFlow id="Flow_1unmrnq" name="Success" sourceRef="Gateway_1xqu0z3" targetRef="Event_0h1baoe">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${process_continue == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_1yxgzhh" name="Failed" sourceRef="Gateway_1xqu0z3" targetRef="Event_1ppsltz">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${process_continue == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:serviceTask id="Activity_0iww4mx" name="Process Init" camunda:expression="${bpmnComponent.processInit(execution.id,execution.processInstanceId)}">
+      <bpmn:incoming>Flow_0wuonp2</bpmn:incoming>
+      <bpmn:outgoing>Flow_0jvz9nx</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Activity_0rv6doq" name="Get All Projects" camunda:expression="${bpmnComponent.getAllProject(execution.id,execution.processInstanceId)}">
+      <bpmn:incoming>Flow_0jvz9nx</bpmn:incoming>
+      <bpmn:outgoing>Flow_1tdgwo2</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="Event_1ppsltz">
+      <bpmn:incoming>Flow_1yxgzhh</bpmn:incoming>
+      <bpmn:terminateEventDefinition id="TerminateEventDefinition_0k8dsqa" />
+    </bpmn:endEvent>
+    <bpmn:textAnnotation id="TextAnnotation_15m39kv">
+      <bpmn:text>Get All Projects From Project Microservice</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_1k59qxr" sourceRef="Activity_0rv6doq" targetRef="TextAnnotation_15m39kv" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="process-get-all-projects">
+      <bpmndi:BPMNShape id="TextAnnotation_15m39kv_di" bpmnElement="TextAnnotation_15m39kv">
+        <dc:Bounds x="700" y="90" width="100" height="54" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0wuonp2_di" bpmnElement="Flow_0wuonp2">
+        <di:waypoint x="215" y="97" />
+        <di:waypoint x="263" y="97" />
+        <di:waypoint x="263" y="210" />
+        <di:waypoint x="310" y="210" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0jvz9nx_di" bpmnElement="Flow_0jvz9nx">
+        <di:waypoint x="410" y="210" />
+        <di:waypoint x="600" y="210" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1tdgwo2_di" bpmnElement="Flow_1tdgwo2">
+        <di:waypoint x="700" y="210" />
+        <di:waypoint x="895" y="210" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1unmrnq_di" bpmnElement="Flow_1unmrnq" bioc:stroke="rgb(67, 160, 71)" bioc:fill="rgb(200, 230, 201)">
+        <di:waypoint x="945" y="210" />
+        <di:waypoint x="1122" y="210" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1014" y="192" width="42" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1yxgzhh_di" bpmnElement="Flow_1yxgzhh" bioc:stroke="rgb(229, 57, 53)" bioc:fill="rgb(255, 205, 210)">
+        <di:waypoint x="920" y="235" />
+        <di:waypoint x="920" y="320" />
+        <di:waypoint x="1122" y="320" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1020" y="303" width="30" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="179" y="79" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1xqu0z3_di" bpmnElement="Gateway_1xqu0z3" isMarkerVisible="true">
+        <dc:Bounds x="895" y="185" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0h1baoe_di" bpmnElement="Event_0h1baoe" bioc:stroke="rgb(67, 160, 71)" bioc:fill="rgb(200, 230, 201)">
+        <dc:Bounds x="1122" y="192" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0k89n3u_di" bpmnElement="Activity_0iww4mx">
+        <dc:Bounds x="310" y="170" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0802k9s_di" bpmnElement="Activity_0rv6doq">
+        <dc:Bounds x="600" y="170" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0cnxsyn_di" bpmnElement="Event_1ppsltz" bioc:stroke="rgb(229, 57, 53)" bioc:fill="rgb(255, 205, 210)">
+        <dc:Bounds x="1122" y="302" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_1k59qxr_di" bpmnElement="Association_1k59qxr">
+        <di:waypoint x="688" y="170" />
+        <di:waypoint x="713" y="144" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

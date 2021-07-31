@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -27,6 +28,8 @@ import org.camunda.bpm.engine.task.Task;
 import za.co.nextgen.exception.BadRequestException;
 import za.co.nextgen.model.Project;
 import za.co.nextgen.model.response.CreateProjectResponse;
+import za.co.nextgen.model.response.GetAllProjectsResponse;
+import za.co.nextgen.model.response.GetProjectByIdResponse;
 
 @RestController
 public class ProjectBPMNController {
@@ -111,18 +114,75 @@ public class ProjectBPMNController {
 	    ResponseEntity<Object> getById(
 	            @PathVariable(name = "projectId", required = false) Long id) {
 
+		
 	        LOGGER.info("obtaining project by id {} ", id);
+	        GetProjectByIdResponse response = new GetProjectByIdResponse();
+			
+	      //Map process variables to start the process with
+	        Map<String, Object> processVariables = new HashMap<String, Object>();
+	        processVariables.put("project_id", id);
 
-	        return null;
+	        //Start Camunda Process
+	        ProcessInstance processInstance = runtimeService.startProcessInstanceByKey("process-get-project-by-id", processVariables);
+	        String processInstanceId = processInstance.getProcessInstanceId();
+	        
+	        
+	        //Retrieve Project From Process
+	        HistoricVariableInstance projectFromHistory = historyService.createHistoricVariableInstanceQuery().processInstanceId(processInstanceId).variableName("project").singleResult();
+	        Project project = null;
+	        if(Objects.nonNull(projectFromHistory) 
+	        		&& Objects.nonNull(projectFromHistory.getValue())) {
+	        	project = (Project)projectFromHistory.getValue();
+	        	//Add Saved Project To The Response
+	        	response.setProject(project);
+	        }else {
+	        	throw new BadRequestException("Failed To Retrieve Project Due To Your Funny Request");
+	        }
+	        
+	      //Retrieve Tasks From Process
+	        HistoricVariableInstance projectsFromHistory = historyService.createHistoricVariableInstanceQuery().processInstanceId(processInstanceId).variableName("task_list").singleResult();
+	        List<za.co.nextgen.model.Task> tasks = null;
+	        if(Objects.nonNull(projectsFromHistory) 
+	        		&& Objects.nonNull(projectsFromHistory.getValue())) {
+	        	tasks = (List)projectsFromHistory.getValue();
+	        	//Add Tasks To The Response
+	        	response.setTasks(tasks);
+	        }else {
+	        	throw new BadRequestException("Failed To Retrieve Tasks Due To Your Funny Request");
+	        }
+			
+		        LOGGER.info("obtaining all projects ");
+
+		        return new ResponseEntity<Object>(response, HttpStatus.OK);
+
 	}
 	
 	@RequestMapping(value = "/bpmn/project", method = RequestMethod.GET, produces = "application/json")
 	 private @ResponseBody
 	    ResponseEntity<Object> getAll() {
 
+		GetAllProjectsResponse response = new GetAllProjectsResponse();
+		
+		
+        //Start Camunda Process
+        ProcessInstance processInstance = runtimeService.startProcessInstanceByKey("process-get-all-projects");
+        String processInstanceId = processInstance.getProcessInstanceId();
+        
+        //Get All Projects 
+        HistoricVariableInstance projectsFromHistory = historyService.createHistoricVariableInstanceQuery().processInstanceId(processInstanceId).variableName("project_list").singleResult();
+        List<Project> projects = null;
+        if(Objects.nonNull(projectsFromHistory) 
+        		&& Objects.nonNull(projectsFromHistory.getValue())) {
+        	projects = (List)projectsFromHistory.getValue();
+        	//Add Projects To The Response
+        	response.setProjects(projects);
+        }else {
+        	throw new BadRequestException("Project Failed To Create Due To Your Funny Request");
+        }
+		
 	        LOGGER.info("obtaining all projects ");
 
-	        return null;
+	        return new ResponseEntity<Object>(response, HttpStatus.OK);
 	}
 	
 	

@@ -16,7 +16,7 @@ public class ProjectRef implements Serializable{
 	 */
 	private static final long serialVersionUID = 8181420046388297749L;
 
-	
+	private Long tableId;
 	private Long id;
 	
 	private String href;
@@ -36,6 +36,14 @@ public class ProjectRef implements Serializable{
 
 	public void setHref(String href) {
 		this.href = href;
+	}
+
+	public Long getTableId() {
+		return tableId;
+	}
+
+	public void setTableId(Long tableId) {
+		this.tableId = tableId;
 	}
 	
 	
